@@ -1,0 +1,158 @@
+Midterm 2 answer key
+
+1. 7 bits for op code, 3 bits for each mode (3, 6 or 9 bits)
+a.  3 operands uses 7 + 9 = 16 of the 36 bits for op code and 
+	modes leaving 20 bits for the registers, 3 registers
+	means 20 / 3 = 6 bits per register, so 2^6 = 64 
+	registers
+b.  3 operands again so 20 bits for the 3 operands, with 32
+	registers we use 5 + 5 bits for the two registers
+	leaving 20 - 10 = 10 bits for the immediate datum
+	which is in two's compl, so the largest is 511
+	(2^9 - 1)
+c.  2 operands use 7 + 6 = 13 bits leaving 23 bits for
+	the two operands, both consist of a register (4
+	bits) and a displacement (unsigned) so 23 - 8 =
+	15 bits for the two displacements is 7 bits 
+	meaning	the largest displ is 2^7 - 1 = 127
+d.  1 operand uses 3 bits (7 + 3 = 10) leaving 26 bits
+	for the address, so the largest address is
+	2^26-1 (64M-1)
+
+2.  Answers will vary, here is my solution.
+    Top:	Load x
+		Subt y
+		Skipcond 10 (x > y)
+		Jump Loop   (x <= y)
+		Jump Done   (x > y)
+    Loop:	Input
+		Store z
+		Load x
+		Subt z
+		Skipcond 01 (x==z)
+		Jump Next  (x!=z, test 2nd cond)
+		Jump Ifc   (x==z, do if clause)
+    Next:	Load y
+		Subt z
+		Skipcond 00 (y < z)
+		Jump Ifc    (y >= z, do if clause)
+		Jump Else   (both conditions false)
+    IfC:	Load sum      (do else clause)
+		Add z
+		Store sum
+		Load y
+		Subt #1
+		Store y
+		Jump Top    (nothing at the bottom
+    Else:	Load sum       of the loop so go
+		Add x          back to top of loop)
+		Store sum
+		Load x
+		Add #1
+		Store x
+		Jump Top
+    Done:	Load sum
+		Output
+		Halt
+
+3a.  For the CJump, we need 3 bits for the condition code and 
+	4 bits for the op code leaving 9 bits for the
+	address portion. The largest address would be 2^9-1
+	or 511
+3b.  address bus, PC, MAR all to 9 bits, memory size is 
+	reduced to 512x16
+3c.  -2^8..+2^8-1 or -256..+255
+
+4a.  Fetch:	MAR <-- PC
+		MBR <-- M[MAR]
+		IR <-- MBR
+		PC <-- PC + 1
+     Decode:	Decode IR[15-12]
+	        MAR <-- IR[11-0]
+     Get Op:    MBR <-- M[MAR]
+     Execute:   If AC = 0 Then
+                   AC <-- MBR
+
+4b. In 4a, if AC!=0 then MAR <-- IR[11-0] and MBR <-- M[MAR]
+	are not needed. We can move these two steps to be
+	part of the execute in the then clause. 
+     Fetch:	MAR <-- PC
+		MBR <-- M[MAR]
+		IR <-- MBR
+		PC <-- PC + 1
+     Decode:	Decode IR[15-12]
+     Get Op:    Not used
+     Execute:   If AC = 0 Then
+   		   MAR <-- IR[11-0]
+		   MBR <-- M[MAR]
+                   AC <-- MBR
+
+5.  k = 9, n = 500,000, branch penalty = 6, 20,000 branches
+	each skip over 5 instructions so when all branches
+	are taken n' = 400,000
+a.  n * k = 500,000 * 9 = 4,500,000
+b.  n + k - 1 = 500,000 + 9 - 1 = 500,008
+c.  n' * k = 400,000 * 9 = 3,600,000
+d.  n' + k - 1 + branches * branch penalty = 
+	400,000 + 9 - 1 + 20,000 * 6 = 520,008
+
+6.  Before the loop: 6 (clear), 8 (store) = 14 cycles
+    First 3 loop iterations (user inputs positive numbers):
+	6 (input), 7 (skipcond true), 8 (load), 8 (add), 
+	8 (store), 6 (jump top) (jump to done is skipped)
+	or (6 + 7 + 8 + 8 + 8 + 6) * 3 = 129 cycles
+    Last loop iteration: 6 (input), 6 (skipcond), 
+	6 (jump done) = 18 cycles
+    After the loop: 8 (load), 6 (output), 5 (halt)
+	= 19 cycles
+    Total cycles = 14 + 129 + 18 + 19 = 180 cycles
+
+7.  128Mx32 memory, 32Mx2 chips, high-order interleave
+a.  128Mx32 / 16Mx2 = 4 * 16 = 64 chips
+b.  64 chips / (32 / 2) = 4 banks
+c.  log 128M = 27 bits
+d.  4 banks requires 2 bits for the bank select, 
+	high-order means the high-order or leftmost 
+	bits are the bank select, so 2 - 25
+
+8.  Load 50, R1 = 200
+a.  50 (50 is the datum)
+b.  150 (50 is the address of the datum)
+c.  300 (50 is the address of a pointer to the datum)
+d.  50 (datum is at 50 + 200)
+
+9.  k = 14, n = 5000, 2000 data dependences each with
+	a 4 cycle stall, tp = 1.1
+    cycles = (n + k - 1 + stalls) * tp = 
+	(5000 + 14 - 1 + 2000 * 4) * 1.1 = 14314.3
+	which would be rounded up to 14315 (there's
+	no such thing as .3 of a cycle)
+
+10. We may not be able to fetch an instruction in 1
+	cycle since instruction lengths vary. This
+	will stall the pipeline if we cannot fetch
+	the entire instruction in the 1 cycle because
+	we must continue to fetch this instruction rather
+	than fetch the next instruction. It can also
+	impact decoding because, being variable length,
+	it may take multiple cycles to find the end of
+	the current instruction. Thus, it could impact 
+	the instruction fetch and decode stages.
+
+11a. Not all instructions use IR[11-0] so why move
+	it to the MAR if not needed?
+11b. Clear, Input, Output, Halt, also Skipcond,
+	Jump
+
+Bonus: many possibilities including length of the
+	fetch execute-cycle, whether the processor
+	is pipelined and if so, how long and how
+	effective it is, cache performance, size
+	of bus, specific program instructions,
+	if compiler optimization is available,
+	number of cores, etc
+
+	instructions per clock is not one as
+	this makes no sense, maybe you meant
+	number of cycles per instruction?
+	
